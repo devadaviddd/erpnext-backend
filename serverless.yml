@@ -1,0 +1,54 @@
+org: devadavid
+app: erpnext-application
+service: erpnext-backend
+frameworkVersion: '3'
+useDotenv: true
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-import-apigateway
+
+custom:
+  dotenv:
+    path: '.env'
+  
+
+  importApiGateway:
+    # name: ${self:provider.stage}-erpGate
+    name: erpGate
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev
+  environment:
+    USERS_TABLE: 'users'
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users"
+functions:
+  app:
+    handler: src/index.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+  createUser:
+    handler: src/index.handler
+    events:
+      - http: 'POST /user/{proxy+}'
+
+
+# resources:
+
