@@ -32,11 +32,11 @@ export class DynamoDB {
   }
 
   async putItem(params) {
-    await this.#dbClient.put(params,  (error) => {
+    await this.#dbClient.put(params, (error) => {
       if (error) {
         console.error(`Unable to add item. Error JSON: ${JSON.stringify(error, null, 2)}`);
         throw new Error(error);
-      } 
+      }
       console.log(`Added item: ${JSON.stringify(params, null, 2)}`);
     }).promise();
   }

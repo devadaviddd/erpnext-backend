@@ -17,6 +17,7 @@
     "eslint-plugin-import": "^2.29.0",
     "serverless-dotenv-plugin": "^6.0.0",
     "serverless-import-apigateway": "^1.1.1",
-    "serverless-offline": "^13.3.0"
+    "serverless-offline": "^13.3.0",
+    "serverless-offline-local-authorizers-plugin": "^1.2.0"
   }
 }

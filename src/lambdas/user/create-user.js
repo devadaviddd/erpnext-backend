@@ -2,7 +2,7 @@ import { databases } from '../../databases/index.js';
 
 export const createUser = async (req, res) => {
   const { body } = req;
-  const { name, email, password, userTier } = body; 
+  const { name, email, password, userTier } = body;
   const { dynamoDB } = databases;
   console.log('Creating user...');
   const tableName = dynamoDB.getTable('users');

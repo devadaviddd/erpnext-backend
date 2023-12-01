@@ -1,21 +1,19 @@
 org: devadavid
 app: erpnext-application
-service: erpnext-backend
-frameworkVersion: '3'
+service: erp-backend
+frameworkVersion: "3"
 useDotenv: true
 
 plugins:
-  - serverless-offline
   - serverless-dotenv-plugin
+  - serverless-offline-local-authorizers-plugin
+  - serverless-offline
   - serverless-import-apigateway
 
 custom:
   dotenv:
-    path: '.env'
-  
-
+    path: ".env" 
   importApiGateway:
-    # name: ${self:provider.stage}-erpGate
     name: erpGate
 provider:
   name: aws
@@ -23,7 +21,10 @@ provider:
   region: us-east-1
   stage: dev
   environment:
-    USERS_TABLE: 'users'
+    USERS_TABLE: "users"
+    USER_POOL_ID: { Ref: UserPool }
+    CLIENT_ID: { Ref: UserClient }
+    REST_API_ID: ${env:REST_API_ID}
 
   iam:
     role:
@@ -38,17 +39,93 @@ provider:
             - dynamodb:DeleteItem
           Resource:
             - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users"
+
+        # Cognito permissions
+        - Effect: Allow
+          Action:
+            - cognito-idp:AdminInitiateAuth
+            - cognito-idp:AdminCreateUser
+            - cognito-idp:AdminSetUserPassword
+          Resource: "*"
+
 functions:
   app:
     handler: src/index.handler
     events:
       - http: ANY /
-      - http: 'ANY {proxy+}'
+      - http: "ANY {proxy+}"
   createUser:
     handler: src/index.handler
     events:
-      - http: 'POST /user/{proxy+}'
+      - http: "POST /user/{proxy+}"
 
+#  So here we are using AWS Cognito authorizer for our API Gateway which checks on each request if the valid access token is being passed with it. And only then it allows our main lambda function to be invoked.
+  auth:
+    handler: src/index.handler
+    events:
+      - http:
+          path: /auth
+          method: post
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+          arn:
+            Fn::GetAtt:
+              - UserPool
+              - Arn
+          claims:
+            - email
 
-# resources:
+  login:
+    handler: src/index.handler
+    events:
+      - http:
+          path: /auth/login
+          method: post
+
+  signup:
+    handler: src/index.handler
+    events:
+      - http:
+          path: /auth/signup
+          method: post    
+
+resources:
+  Resources:
+    UserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: serverless-auth-pool
+        Schema:
+          - Name: email
+            Required: true
+            Mutable: true            
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 6
+        AutoVerifiedAttributes: ["email"]
+
+    UserClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: user-pool-ui
+        UserPoolId: { Ref: UserPool }
+        AccessTokenValidity: 5 # 5 hours
+        IdTokenValidity: 5 # 5 hours
+        ExplicitAuthFlows:
+          - "ADMIN_NO_SRP_AUTH" # which can be used to authorize users with username and password
+        
+            
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: ERPUserPool
+        Type: COGNITO_USER_POOLS
+        IdentitySource: method.request.header.Authorization
+        RestApiId: ${env:REST_API_ID}
+        ProviderARNs:
+          - Fn::GetAtt:
+              - UserPool
+              - Arn
 
