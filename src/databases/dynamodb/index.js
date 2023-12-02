@@ -31,6 +31,18 @@ export class DynamoDB {
     }).promise();
   }
 
+  async queryItems(params) {
+    const res = this.#dbClient.query(params, (error, data) => {
+      if (error) {
+        console.error(`Unable to query. Error JSON: ${JSON.stringify(error, null, 2)}`);
+        throw new Error(error);
+      } else {
+        console.log(`Query succeeded: ${JSON.stringify(data, null, 2)}`);
+      }
+    }).promise();
+    return res;
+  }
+
   async putItem(params) {
     await this.#dbClient.put(params, (error) => {
       if (error) {

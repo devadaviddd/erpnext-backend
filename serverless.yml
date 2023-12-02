@@ -49,22 +49,45 @@ provider:
           Resource: "*"
 
 functions:
-  app:
-    handler: src/index.handler
-    events:
-      - http: ANY /
-      - http: "ANY {proxy+}"
   createUser:
     handler: src/index.handler
     events:
-      - http: "POST /user/{proxy+}"
+      - http: 
+          path: /user
+          method: post
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+          arn:
+            Fn::GetAtt:
+              - UserPool
+              - Arn
+          claims:
+            - email
 
-#  So here we are using AWS Cognito authorizer for our API Gateway which checks on each request if the valid access token is being passed with it. And only then it allows our main lambda function to be invoked.
-  auth:
+  registerTrialPlan:
     handler: src/index.handler
     events:
-      - http:
-          path: /auth
+      - http: 
+          path: /user/trial
+          method: post
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+          arn:
+            Fn::GetAtt:
+              - UserPool
+              - Arn
+          claims:
+            - email
+
+  registerPremiumPlan:
+    handler: src/index.handler
+    events:
+      - http: 
+          path: /user/premium
           method: post
           authorizer:
             type: COGNITO_USER_POOLS
@@ -89,8 +112,15 @@ functions:
     events:
       - http:
           path: /auth/signup
-          method: post    
+          method: post
 
+  scheduling-expired-plan:
+    handler: src/index.handler
+    events:
+      - http:
+          path: /schedule-expired-plan
+          method: get
+          
 resources:
   Resources:
     UserPool:
