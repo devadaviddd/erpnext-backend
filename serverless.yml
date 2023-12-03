@@ -6,7 +6,6 @@ useDotenv: true
 
 plugins:
   - serverless-dotenv-plugin
-  - serverless-offline-local-authorizers-plugin
   - serverless-offline
   - serverless-import-apigateway
 
@@ -49,22 +48,6 @@ provider:
           Resource: "*"
 
 functions:
-  createUser:
-    handler: src/index.handler
-    events:
-      - http: 
-          path: /user
-          method: post
-          authorizer:
-            type: COGNITO_USER_POOLS
-            authorizerId: 
-              Ref: ApiGatewayAuthorizer
-          arn:
-            Fn::GetAtt:
-              - UserPool
-              - Arn
-          claims:
-            - email
 
   registerTrialPlan:
     handler: src/index.handler
@@ -120,7 +103,8 @@ functions:
       - http:
           path: /schedule-expired-plan
           method: get
-          
+      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:trial-plan-expired-check-queue     
+        
 resources:
   Resources:
     UserPool:

@@ -25,9 +25,28 @@ export const schedulingExpiredPlan = async (req, res) => {
   try {
     const data = await dynamoDB.queryItems(params);
     console.log('data', data);
+    const items = data.Items;
+
+    const batchUpdateParams = items.map((item) => {
+      return {
+        PutRequest: {
+          Item: {
+            userTier: 'trial',
+            email: item.email,
+            dateExpired: item.dateExpired,
+            isExpired: true,
+          }
+        }
+      }
+    })
+
+    console.log('batchUpdateParams', batchUpdateParams);
+    const newData = await dynamoDB.batchUpdate(batchUpdateParams, tableName);
+    console.log('newData', newData);
+
     res.status(200).json({
       message: 'Scheduling expired plan successfully',
-      data,
+      newData,
     });
   } catch (error) {
     console.error(error);

@@ -1,7 +1,5 @@
 export const authMiddleware = async (req, res, next) => {
   const { requestContext } = req;
-  const { event } = req;
-  console.log('event', event);
   console.log('requestContext', requestContext);
   const { authorizer } = requestContext;
 

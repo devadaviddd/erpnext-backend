@@ -52,4 +52,26 @@ export class DynamoDB {
       console.log(`Added item: ${JSON.stringify(params, null, 2)}`);
     }).promise();
   }
+
+  async batchUpdate(batchUpdateParams, tableName) {
+    const chunkSize = 25;
+    const data = [];
+    for (let i = 0; i < batchUpdateParams.length; i += chunkSize) {
+      const chunk = batchUpdateParams.slice(i, i + chunkSize);
+      const params = {
+        RequestItems: {
+          [tableName]: chunk,
+        }
+      }
+      const batch = await this.#dbClient.batchWrite(params, (error) => {
+        if (error) {
+          console.error(`Unable to batch update. Error JSON: ${JSON.stringify(error, null, 2)}`);
+          throw new Error(error);
+        }
+        console.log(`Batch update: ${JSON.stringify(chunk, null, 2)}`);
+      }).promise();
+      data.push(batch);
+    }
+    return data;
+  }
 }
