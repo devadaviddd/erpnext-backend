@@ -36,6 +36,8 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:BatchGetItem            
           Resource:
             - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users"
 
@@ -103,7 +105,12 @@ functions:
       - http:
           path: /schedule-expired-plan
           method: get
-      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:trial-plan-expired-check-queue     
+      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:queue-test     
+
+  scheduling-expired-plan-sqs:
+    handler: src/lambdas/scheduling-expired-plan.handler
+    events:
+      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:trial-plan-expired-check-queue
         
 resources:
   Resources:
