@@ -23,7 +23,6 @@ export const signup = async (req, res) => {
   try {
     const response = await authService.adminCreateUser(params).promise();
 
-
     if (response.User) {
       const paramsForSetPassword = {
         Password: password,
@@ -33,7 +32,6 @@ export const signup = async (req, res) => {
       }
       await authService.adminSetUserPassword(paramsForSetPassword).promise();
     }
-
 
     console.log(response);
     res.status(200).json({

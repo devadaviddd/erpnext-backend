@@ -14,6 +14,8 @@ custom:
     path: ".env" 
   importApiGateway:
     name: erpGate
+  webpackIncludeModules: true
+
 provider:
   name: aws
   runtime: nodejs18.x
@@ -40,6 +42,16 @@ provider:
             - dynamodb:BatchGetItem            
           Resource:
             - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users"
+            - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users/index/email-index"
+        
+        # Lambda permissions to ssh into EC2 instances
+        - Effect: Allow
+          Action:
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+          Resource:
+            - "*"
 
         # Cognito permissions
         - Effect: Allow
@@ -48,6 +60,13 @@ provider:
             - cognito-idp:AdminCreateUser
             - cognito-idp:AdminSetUserPassword
           Resource: "*"
+
+        # Route53 permissions
+        - Effect: Allow
+          Action:
+            - route53:ChangeResourceRecordSets
+            - route53:ListHostedZonesByName
+          Resource: "*"      
 
 functions:
 
@@ -111,7 +130,32 @@ functions:
     handler: src/lambdas/scheduling-expired-plan.handler
     events:
       - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:trial-plan-expired-check-queue
-        
+
+  config-site:
+    handler: src/index.handler
+    events:
+      - http:
+          path: /server/config-site
+          method: get
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+          arn:
+            Fn::GetAtt:
+              - UserPool
+              - Arn
+          claims:
+            - email
+  
+  create-site-url:
+    handler: src/lambdas/url/create-site-url/index.handler
+    url:
+      cors: true
+    timeout: 900
+
+
+
 resources:
   Resources:
     UserPool:
