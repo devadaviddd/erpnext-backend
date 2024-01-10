@@ -72,6 +72,8 @@ class Route53Service {
       throw new Error(error);
     }
   }
+
+
 }
 
 const serverDomain = new Route53Service();

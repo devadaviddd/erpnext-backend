@@ -157,6 +157,27 @@ export const handler = async (req, res) => {
     console.log('data', data);
     const items = data.Items;
 
+
+    const batchUpdateParams = items.map((item) => {
+      return {
+        PutRequest: {
+          Item: {
+            userTier: 'trial',
+            email: item.email,
+            dateExpired: item.dateExpired,
+            isExpired: true,
+            site: item.site,
+            sitePassword: item.sitePassword,
+          },
+        },
+      };
+    });
+
+    console.log('batchUpdateParams', batchUpdateParams);
+    const newData = await dynamoDB.batchUpdate(batchUpdateParams, tableName);
+    console.log('newData', newData);
+
+
     // drop site
     const dropSitesResponse = items.map(async (item) => {
       const siteName = item.site;
@@ -182,25 +203,6 @@ export const handler = async (req, res) => {
     });
 
     await Promise.all(dropSitesResponse);
-
-    const batchUpdateParams = items.map((item) => {
-      return {
-        PutRequest: {
-          Item: {
-            userTier: 'trial',
-            email: item.email,
-            dateExpired: item.dateExpired,
-            isExpired: true,
-            site: item.site,
-            sitePassword: item.sitePassword,
-          },
-        },
-      };
-    });
-
-    console.log('batchUpdateParams', batchUpdateParams);
-    const newData = await dynamoDB.batchUpdate(batchUpdateParams, tableName);
-    console.log('newData', newData);
 
     // drop dns records
     const dropDNSrecords = items.map(async (item) => {
