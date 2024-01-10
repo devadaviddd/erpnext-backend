@@ -23,7 +23,6 @@ async function getSiteCredential(email) {
   return { site, password };
 }
 
-
 export const configSite = async (req, res) => {
   const { email, siteName, sitePassword } = req.body;
 
@@ -33,29 +32,29 @@ export const configSite = async (req, res) => {
   }
 
   // Create record and check if site exists
-  const isCreateRouteSuccess = serverDomain.createSubDomain(siteName);
-  if (!isCreateRouteSuccess) {
-    return res.status(400).json({ message: 'Site name must be unique' });
-  }
+  try {
+    const isCreateRouteSuccess = await serverDomain.createSubDomain(siteName);
+    if (!isCreateRouteSuccess) {
+      return res.status(400).json({ message: 'Site name must be unique' });
+    }
 
-  // Save user details
-  const { dynamoDB } = databases;
-  const tableName = dynamoDB.getTable('users');
+    // Save user details
+    const { dynamoDB } = databases;
+    const tableName = dynamoDB.getTable('users');
 
-  if (!tableName) {
-    return res.status(500).json({ error: 'Table name not found' });
-  }
+    if (!tableName) {
+      return res.status(500).json({ error: 'Table name not found' });
+    }
 
-  const params = {
-    TableName: 'users',
-    IndexName: 'email-index',
-    KeyConditionExpression: 'email = :email',
-    ExpressionAttributeValues: {
-      ':email': email
-    },
-  };
+    const params = {
+      TableName: 'users',
+      IndexName: 'email-index',
+      KeyConditionExpression: 'email = :email',
+      ExpressionAttributeValues: {
+        ':email': email
+      },
+    };
 
-  try{
     const data = await dynamoDB.queryItems(params);
     console.log('data', data);
 
@@ -91,6 +90,5 @@ export const configSite = async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
-  }  
+  }
 };
-

@@ -16,6 +16,10 @@ async function getUserSiteDomain(email) {
     ScanIndexForward: false,
   });
   const items = record.Items;
+  // Check if items is defined and has at least one item
+  if (!items || items.length === 0) {
+    return null;
+  }
   const user = items[0];
   const siteName = user.site;
   if (!siteName) {
