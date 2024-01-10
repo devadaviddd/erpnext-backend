@@ -30,7 +30,21 @@ export const signup = async (req, res) => {
         Username: email,
         Permanent: true
       }
-      await authService.adminSetUserPassword(paramsForSetPassword).promise();
+      try {
+        await authService.adminSetUserPassword(paramsForSetPassword).promise();
+      } catch (err) {
+
+        // remove user if password setting fails
+        const paramsForDeleteUser = {
+          UserPoolId: USER_POOL_ID,
+          Username: email
+        }
+        await authService.adminDeleteUser(paramsForDeleteUser).promise();
+
+        res.status(400).json({
+          message: 'Password should contain more than 6 characters'
+        })
+      }   
     }
 
     console.log(response);
@@ -44,7 +58,7 @@ export const signup = async (req, res) => {
         message: 'User already exists'
       })
     } else {
-      res.status(500).json({
+      res.status(400).json({
         message: err.message
       })
     }

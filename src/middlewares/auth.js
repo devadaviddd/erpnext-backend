@@ -11,6 +11,7 @@ export const authMiddleware = async (req, res, next) => {
     return res.status(403).json({ message: 'Forbidden' });
   }
 
+
   // set claims to req
   req.userEmail = authorizer.claims.email;
   next();

@@ -1,7 +1,7 @@
 org: devadavid
 app: erpnext-application
-service: erp-backend
-frameworkVersion: "3"
+service: erp-backend-api
+frameworkVersion: '3'
 useDotenv: true
 
 plugins:
@@ -10,8 +10,9 @@ plugins:
   - serverless-import-apigateway
 
 custom:
+  stage: ${opt:stage, 'dev'}
   dotenv:
-    path: ".env" 
+    path: '.env'
   importApiGateway:
     name: erpGate
   webpackIncludeModules: true
@@ -20,12 +21,13 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: us-east-1
-  stage: dev
+  stage: ${self:custom.stage}
   environment:
-    USERS_TABLE: "users"
-    USER_POOL_ID: { Ref: UserPool }
+    USERS_TABLE: 'users'
+    USER_POOL_ID: ${env:USER_POOL_ID_LOCAL}
     CLIENT_ID: { Ref: UserClient }
     REST_API_ID: ${env:REST_API_ID}
+  versionFunctions: true
 
   iam:
     role:
@@ -39,11 +41,11 @@ provider:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
             - dynamodb:BatchWriteItem
-            - dynamodb:BatchGetItem            
+            - dynamodb:BatchGetItem
           Resource:
-            - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users"
-            - "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users/index/email-index"
-        
+            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users'
+            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/users/index/email-index'
+
         # Lambda permissions to ssh into EC2 instances
         - Effect: Allow
           Action:
@@ -51,7 +53,7 @@ provider:
             - ec2:DescribeNetworkInterfaces
             - ec2:DeleteNetworkInterface
           Resource:
-            - "*"
+            - '*'
 
         # Cognito permissions
         - Effect: Allow
@@ -59,79 +61,90 @@ provider:
             - cognito-idp:AdminInitiateAuth
             - cognito-idp:AdminCreateUser
             - cognito-idp:AdminSetUserPassword
-          Resource: "*"
+            - cognito-idp:AdminDeleteUser
+          Resource: '*'
 
         # Route53 permissions
         - Effect: Allow
           Action:
             - route53:ChangeResourceRecordSets
             - route53:ListHostedZonesByName
-          Resource: "*"      
+          Resource: '*'
 
 functions:
-
   registerTrialPlan:
+    name: ${self:provider.stage}-registerTrialPlan
     handler: src/index.handler
     events:
-      - http: 
+      - http:
           path: /user/trial
           method: post
           authorizer:
             type: COGNITO_USER_POOLS
-            authorizerId: 
+            authorizerId:
               Ref: ApiGatewayAuthorizer
           arn:
-            Fn::GetAtt:
-              - UserPool
-              - Arn
+            - arn:aws:cognito-idp:${aws:region}:${aws:accountId}:userpool/${env:USER_POOL_ID_LOCAL}
+
           claims:
             - email
+          cors: true
 
   registerPremiumPlan:
+    name: ${self:provider.stage}-registerPremiumPlan
     handler: src/index.handler
     events:
-      - http: 
+      - http:
           path: /user/premium
           method: post
           authorizer:
             type: COGNITO_USER_POOLS
-            authorizerId: 
+            authorizerId:
               Ref: ApiGatewayAuthorizer
           arn:
-            Fn::GetAtt:
-              - UserPool
-              - Arn
+            - arn:aws:cognito-idp:${aws:region}:${aws:accountId}:userpool/${env:USER_POOL_ID_LOCAL}
           claims:
             - email
+          cors: true
 
   login:
+    name: ${self:provider.stage}-login
     handler: src/index.handler
     events:
       - http:
           path: /auth/login
           method: post
+          cors: true
 
   signup:
+    name: ${self:provider.stage}-signup
     handler: src/index.handler
     events:
       - http:
           path: /auth/signup
           method: post
+          cors: true
 
   scheduling-expired-plan:
+    name: ${self:provider.stage}-scheduling-expired-plan
     handler: src/index.handler
     events:
       - http:
           path: /schedule-expired-plan
           method: get
-      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:queue-test     
+          cors: true
+      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:queue-test
+    timeout: 30
 
   scheduling-expired-plan-sqs:
+    name: ${self:provider.stage}-scheduling-expired-plan-sqs
     handler: src/lambdas/scheduling-expired-plan.handler
     events:
-      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:trial-plan-expired-check-queue
+      - sqs: arn:aws:sqs:${aws:region}:${aws:accountId}:${self:provider.stage}-trial-plan-expired-check-queue
+    timeout: 30
 
   config-site:
+    name: ${self:provider.stage}-config-site
     handler: src/index.handler
     events:
       - http:
@@ -139,58 +152,41 @@ functions:
           method: get
           authorizer:
             type: COGNITO_USER_POOLS
-            authorizerId: 
+            authorizerId:
               Ref: ApiGatewayAuthorizer
+          cors: true
           arn:
-            Fn::GetAtt:
-              - UserPool
-              - Arn
+            - arn:aws:cognito-idp:${aws:region}:${aws:accountId}:userpool/${env:USER_POOL_ID_LOCAL}
           claims:
             - email
-  
+
   create-site-url:
+    name: ${self:provider.stage}-create-site-url
     handler: src/lambdas/url/create-site-url/index.handler
     url:
       cors: true
     timeout: 900
 
-
-
 resources:
   Resources:
-    UserPool:
-      Type: AWS::Cognito::UserPool
-      Properties:
-        UserPoolName: serverless-auth-pool
-        Schema:
-          - Name: email
-            Required: true
-            Mutable: true            
-        Policies:
-          PasswordPolicy:
-            MinimumLength: 6
-        AutoVerifiedAttributes: ["email"]
-
     UserClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
         ClientName: user-pool-ui
-        UserPoolId: { Ref: UserPool }
+        UserPoolId: ${env:USER_POOL_ID_LOCAL}
         AccessTokenValidity: 5 # 5 hours
         IdTokenValidity: 5 # 5 hours
         ExplicitAuthFlows:
-          - "ADMIN_NO_SRP_AUTH" # which can be used to authorize users with username and password
-        
-            
+          - 'ALLOW_ADMIN_USER_PASSWORD_AUTH'
+          - 'ALLOW_REFRESH_TOKEN_AUTH'
+          - 'ALLOW_USER_PASSWORD_AUTH'
+
     ApiGatewayAuthorizer:
       Type: AWS::ApiGateway::Authorizer
       Properties:
-        Name: ERPUserPool
+        Name: VertexUserPool
         Type: COGNITO_USER_POOLS
         IdentitySource: method.request.header.Authorization
         RestApiId: ${env:REST_API_ID}
         ProviderARNs:
-          - Fn::GetAtt:
-              - UserPool
-              - Arn
-
+          - arn:aws:cognito-idp:${aws:region}:${aws:accountId}:userpool/${env:USER_POOL_ID_LOCAL}

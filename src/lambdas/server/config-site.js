@@ -1,40 +1,5 @@
 import { databases } from '../../databases/index.js';
-import AWS from 'aws-sdk';
-
-async function createRoute53Record(siteName) {
-  const isCreateRouteSuccess = true;
-  const route53 = new AWS.Route53();
-  const hostedZoneId = 'Z0956807UI85NVKPHSTY';
-
-  const params = {
-    ChangeBatch: {
-      Changes: [
-        {
-          Action: 'CREATE',
-          ResourceRecordSet: {
-            Name: `${siteName}.vertex-erp.com`,
-            Type: 'A',
-            TTL: 60,
-            ResourceRecords: [
-              {
-                Value: '54.82.167.21',
-              },
-            ],
-          },
-        },
-      ],
-    },
-    HostedZoneId: hostedZoneId,
-  };
-
-  try {
-    await route53.changeResourceRecordSets(params).promise();
-    return isCreateRouteSuccess;
-  } catch (error) {
-    console.error('Error creating Route53 record:', error);
-    return !isCreateRouteSuccess;
-  }
-}
+import serverDomain from '../../server/domain.js';
 
 async function getSiteCredential(email) {
   console.log('email', email);
@@ -63,7 +28,9 @@ export const configSite = async (req, res) => {
   const siteName = siteCredential.site;
   const sitePassword = siteCredential.password;
 
-  const isCreateRouteSuccess = await createRoute53Record(siteName);
+  console.log('siteName', siteName);
+
+  const isCreateRouteSuccess = serverDomain.createSubDomain(siteName);
   if (!isCreateRouteSuccess) {
     res.status(400).json({ message: 'Site name must be unique' });
   }

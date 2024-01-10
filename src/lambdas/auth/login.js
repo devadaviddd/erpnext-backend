@@ -15,10 +15,16 @@ export const login = async (req, res) => {
     }
   } 
 
-  const response = await authService.adminInitiateAuth(params).promise();
-  console.log(response.AuthenticationResult);
-  return res.status(200).json({
-    message: 'Login successful',
-    token: response.AuthenticationResult.IdToken
-  })
+  try {
+    const response = await authService.adminInitiateAuth(params).promise();
+    console.log(response.AuthenticationResult);
+    return res.status(200).json({
+      message: 'Login successful',
+      token: response.AuthenticationResult.IdToken
+    })
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message
+    })
+  }
 }
