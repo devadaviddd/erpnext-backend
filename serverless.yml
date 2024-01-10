@@ -1,4 +1,3 @@
-org: devadavid
 app: erpnext-application
 service: erp-backend-api
 frameworkVersion: '3'
@@ -149,7 +148,7 @@ functions:
     events:
       - http:
           path: /server/config-site
-          method: get
+          method: post
           authorizer:
             type: COGNITO_USER_POOLS
             authorizerId:
