@@ -59,6 +59,7 @@ export const schedulingExpiredPlan = async (req, res) => {
     ExpressionAttributeValues: {
       ':pk': 'trial',
       ':date': currentDate,
+      ':isExpired': false,
     },
     FilterExpression: 'dateExpired = :date',
   };
@@ -148,8 +149,9 @@ export const handler = async (req, res) => {
     ExpressionAttributeValues: {
       ':pk': 'trial',
       ':date': currentDate,
+      ':isExpired': false,
     },
-    FilterExpression: 'dateExpired = :date',
+    FilterExpression: 'dateExpired = :date AND isExpired = :isExpired',
   };
 
   try {
@@ -185,7 +187,7 @@ export const handler = async (req, res) => {
       const promise = new Promise((resolve, reject) => {
         vertex
           .exec(
-            `bench  drop-site ${siteName} --db-root-password ${process.env.DB_PASSWORD}`,
+            `bench  drop-site ${siteName} --force --db-root-password ${process.env.DB_PASSWORD}`,
             {
               out: (stdout) => {
                 resolve(stdout);

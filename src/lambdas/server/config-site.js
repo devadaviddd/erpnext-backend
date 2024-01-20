@@ -24,7 +24,9 @@ async function getSiteCredential(email) {
 }
 
 export const configSite = async (req, res) => {
-  const { email, siteName, sitePassword } = req.body;
+  const  email  = req.userEmail;
+
+  const { siteName, sitePassword } = req.body;
 
   // Check if all fields are provided
   if (!email || !siteName || !sitePassword) {

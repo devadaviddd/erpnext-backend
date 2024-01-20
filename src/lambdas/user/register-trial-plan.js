@@ -3,8 +3,9 @@ import { databases } from '../../databases/index.js';
 
 function expireInOneWeek () {
   const today = new Date();
-  const oneWeek = 7 * 24 * 60 * 60 * 1000;
-  const nextWeek = new Date(today.getTime() + oneWeek);
+  // const oneWeek = 7 * 24 * 60 * 60 * 1000;
+  const tooWeek = 7 * 24 * 60 * 60 * 1000 * 2;
+  const nextWeek = new Date(today.getTime() + tooWeek);
   return nextWeek.toDateString();
 }
 
@@ -24,6 +25,7 @@ export const registerTrialPlan = async (req, res) => {
       Item: {
         userTier: 'trial',
         email: userEmail,
+        isExpired: false,
         dateExpired: expireInOneWeek()
       }
     });

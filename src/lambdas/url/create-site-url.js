@@ -1,12 +1,8 @@
 import { vertex } from '../../../server/vertex.js';
 
-// https://tr3ewd3seyzofuxvf2eplb52qm0vntlk.lambda-url.us-east-1.on.aws/?siteName=khang&sitePassword=khang123
-
-async function createSiteUrl(event, context, callback) {
-  const querystring = event.queryStringParameters;
-  const siteName = querystring.siteName;
-  const sitePassword = querystring.sitePassword;
-
+export const createSiteUrl = async (req, res) => {
+  const queryString = req.query;
+  const { siteName, sitePassword } = queryString;
   const promise = new Promise((resolve, reject) => {
     vertex
       .exec('pwd', {
@@ -37,27 +33,13 @@ async function createSiteUrl(event, context, callback) {
 
   try {
     await promise;
-    callback(null, {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: `site ${siteName} created`,
-      }),
+    res.status(200).json({
+      message: `site ${siteName} created`,
     });
   } catch (error) {
     console.log('error', error);
-    callback(null, {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        error: error.message,
-      }),
+    res.status(500).json({
+      error: error.message,
     });
   }
-}
-
-export const handler = createSiteUrl;
+};

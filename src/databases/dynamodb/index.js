@@ -53,6 +53,17 @@ export class DynamoDB {
     }).promise();
   }
 
+  async deleteItem(params) {
+    await this.#dbClient.delete(params, (error) => {
+      if (error) {
+        console.error(`Unable to delete item. Error JSON: ${JSON.stringify(error, null, 2)}`);
+        throw new Error(error);
+      }
+      console.log(`DeleteItem succeeded: ${JSON.stringify(params, null, 2)}`);
+    }).promise();
+  }
+
+
   async batchUpdate(batchUpdateParams, tableName) {
     const chunkSize = 25;
     const data = [];
@@ -74,4 +85,5 @@ export class DynamoDB {
     }
     return data;
   }
+
 }
